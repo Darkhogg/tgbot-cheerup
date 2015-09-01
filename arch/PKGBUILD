@@ -1,6 +1,6 @@
 # Maintainer: Somebody <somebody[at]foo[dot]tld>
 pkgname=tgbot-cheerup
-pkgver=latest
+pkgver=r5.ab62011
 pkgrel=1
 pkgdesc="Telegram bot that sends cheering up messages at specific intervals"
 url="http://www.foo.tld"
@@ -25,7 +25,10 @@ pkgver() {
 build() {
     cd "$srcdir"/"$pkgname"
 
+    msg2 'Installing npm dependencies'
     npm install
+
+    msg2 'Deduping packages'
     npm dedupe
 }
 

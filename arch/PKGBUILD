@@ -9,9 +9,11 @@ license=('MIT')
 depends=('nodejs' 'mongodb' 'nodejs-foreman')
 makedepends=('npm')
 source=("$pkgname"::git+https://github.com/Darkhogg/tgbot-cheerup.git
-        tgbot-cheerup.service)
+        tgbot-cheerup.service
+        tgbot-cheerup.env)
 sha1sums=('SKIP'
-          '33dd090f98c32f7f7258122f701658bed13f2f07')
+          '0ed22f6b3b3b339e5981e2b6a4ababcdf2136699'
+          'a9992d7ba6c50c632dde5e600886bf68cb187704')
 
 pkgver() {
     cd "$srcdir"/"$pkgname"
@@ -38,6 +40,6 @@ package() {
     cp -r "$srcdir"/"$pkgname"/* "$pkgdir"/opt/tgbot-cheerup
     rm -rf "$pkgdir"/opt/tgbot-cheerup/arch
 
-    # Move the .service to its dir
     install -Dm644 "$srcdir"/tgbot-cheerup.service "$pkgdir"/usr/lib/systemd/system/tgbot-cheerup.service
+    install -Dm600 "$srcdir"/tgbot-cheerup.env "$pkgdir"/etc/tbot-cheerup.env
 }

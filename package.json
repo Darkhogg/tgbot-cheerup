@@ -1,0 +1,10 @@
+{
+  "name": "cheerupbot",
+  "version": "0.1.0",
+  "description": "Telegram bot that sends cheering up messages at specific intervals",
+  "license": "MIT",
+  "main": "index.js",
+  "dependencies": {
+    "paperdrone": "git+https://github.com/Darkhogg/paperdrone.git"
+  }
+}

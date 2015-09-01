@@ -13,7 +13,7 @@ source=("$pkgname"::git+https://github.com/Darkhogg/tgbot-cheerup.git
         tgbot-cheerup.service
         tgbot-cheerup.env)
 sha1sums=('SKIP'
-          '8f3f1a183b70b49402b255992f756274b43a4bb2'
+          '243a64ca33c672f31a050873b6ebca1cbbdc833a'
           'a9992d7ba6c50c632dde5e600886bf68cb187704')
 
 pkgver() {

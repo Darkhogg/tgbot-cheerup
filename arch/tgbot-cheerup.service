@@ -4,7 +4,8 @@ After=mongodb.service
 Requires=mongodb.service
 
 [Service]
-ExecStart=/usr/bin/nf start -e /etc/tgbot-cheerup.env -- /opt/tgbot-cheerup/index.js
+WorkingDirectory=/opt/tgbot-cheerup/
+ExecStart=/usr/bin/nf start -e /etc/tgbot-cheerup.env -j /opt/tgbot-cheerup/Procfile -- /opt/tgbot-cheerup/index.js
 
 [Install]
 WantedBy=multi-user.target

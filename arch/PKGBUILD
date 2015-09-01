@@ -1,6 +1,6 @@
 # Maintainer: Somebody <somebody[at]foo[dot]tld>
 pkgname=tgbot-cheerup
-pkgver=r7.ecac99b
+pkgver=latest
 pkgrel=1
 pkgdesc="Telegram bot that sends cheering up messages at specific intervals"
 url="http://www.foo.tld"
@@ -13,7 +13,7 @@ source=("$pkgname"::git+https://github.com/Darkhogg/tgbot-cheerup.git
         tgbot-cheerup.service
         tgbot-cheerup.env)
 sha1sums=('SKIP'
-          '0ed22f6b3b3b339e5981e2b6a4ababcdf2136699'
+          '2f40a643ee7a7724fe10f096d26b5d11f9f6b855'
           'a9992d7ba6c50c632dde5e600886bf68cb187704')
 
 pkgver() {

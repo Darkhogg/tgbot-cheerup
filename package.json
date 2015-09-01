@@ -1,5 +1,5 @@
 {
-  "name": "cheerupbot",
+  "name": "tgbot-cheerup",
   "version": "0.1.0",
   "description": "Telegram bot that sends cheering up messages at specific intervals",
   "license": "MIT",

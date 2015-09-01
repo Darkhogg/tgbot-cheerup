@@ -1,0 +1,10 @@
+[Unit]
+Description=Cheer Up Bot
+After=mongodb.service
+Requires=mongodb.service
+
+[Service]
+ExecStart=nf start /opt/tgbot-cheerup/index.js
+
+[Install]
+WantedBy=multi-user.target

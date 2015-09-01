@@ -1,0 +1,33 @@
+# Maintainer: Somebody <somebody[at]foo[dot]tld>
+pkgname=tgbot-cheerup
+pkgver=latest
+pkgrel=1
+pkgdesc="Telegram bot that sends cheering up messages at specific intervals"
+url="http://www.foo.tld"
+arch=('any')
+license=('MIT')
+depends=('nodejs' 'mongodb' 'nodejs-foreman')
+makedepends=('npm')
+source=("$pkgname"::git+https://github.com/Darkhogg/tgbot-cheerup.git
+        tgbot-cheerup.service)
+sha1sums=('SKIP'
+          'a04fe72dd0a4c840ed2d86725e1744bdc17386e3')
+
+pkgver() {
+    cd "$srcdir$pkgname"
+    ( set -o pipefail
+        git describe --long 2>/dev/null | sed 's/\([^-]*-g\)/r\1/;s/-/./g' ||
+        printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+    )
+}
+
+build() {
+    :
+}
+
+package() {
+    # install in /opt/tgbot-cheerup
+    install -dm755 "$pkgdir"/opt/tgbot-cheerup
+    cp -r "$srcdir"/"$pkgname"/* "$pkgdir"/opt/tgbot-cheerup
+    rm -rf "$pkgdir"/opt/tgbot-cheerup/arch
+}

@@ -14,7 +14,7 @@ let bot = new pd.Bot({
     'token': process.env.TGBOT_TOKEN,
     'logger': log,
     'mongo': {
-        'client': pmongo('cheerupbot')
+        'client': pmongo(process.env.MONGO_URL)
     }
 });
 
@@ -36,7 +36,7 @@ bot.help.text =
     '\nCommands:\n' +
     '  /settings - See and modify your settings\n' +
     '  /cheerup - Immediately sends you a cheering up message\n' +
-    '  /schedule - Create a new schedule' +
+    '  /schedule - Create a new schedule\n' +
     '\nMy master is @Darkhogg\n' +
     'I\'m an open source bot: https://github.com/Darkhogg/tgbot-cheerup';
 
@@ -87,41 +87,65 @@ bot.on('command.cheerup', function ($evt, cmd, msg) {
 });
 
 bot.on('command.schedule', function ($evt, cmd, msg) {
-    let key = uuid.v4();
-    let cat = 'sched-' + bot.id;
-
-    return bot.storage.set(cat, key, {}).then(() => {
-        return Promise.all([
-            bot.prompter.prompt(msg.chat.id, msg.from.id, 'schedule_time', {'cat': cat, 'key': key}),
-            bot.prompter.prompt(msg.chat.id, msg.from.id, 'schedule_duration', {'cat': cat, 'key': key}),
-        ]);
-    });
+    return bot.prompter.prompt(msg.chat.id, msg.from.id, 'schedule_time');
 });
 
 
 bot.on('prompt.request.schedule_time', function ($evt, prompt) {
+    let now = moment.tz('Europe/Madrid').format('YYYY-MM-DD hh:mm:ss');
     return bot.api.sendMessage({
         'chat_id': prompt.chat,
         'text': 'When do you want me to begin sending you cheering up messages?\n' +
-                '_Note: Write a date and time with the format `YYYY-MM-DD hh:mm:ss`.  ' +
-                'For example, it\'s ' + moment.tz('Europe/Madrid') + ' in Madrid right now._',
+                '_Note_: Write a date and time with the format `YYYY-MM-DD hh:mm:ss`.  ' +
+                'For example, it\'s `' + now + '` in Madrid right now.',
+        /*'reply_markup': Json.stringify({
+            'keyboard': [['8 hours', '1 day', '1 week']]
+            'one_time_keyboard': true,
+        }),*/
         'parse_mode': 'Markdown'
     });
 });
 
 bot.on('prompt.complete.schedule_time', function ($evt, prompt, result) {
-    return bot.storage.get('settings', prompt.user).then(obj => {
-        let when = moment.tz(result.text, 'YYYY-MM-DD HH:mm:ss', obj.timezone);
-        console.log(when.utc().format());
+    return bot.storage.get('settings', prompt.user).then(settings => {
+        let when = moment.tz(result.text, 'YYYY-MM-DD HH:mm:ss', settings.timezone);
+        bot.logger.debug('[CheerUpBot]  date "%s": ', result.text, when.format());
+
+        return bot.api.sendMessage({
+            'chat_id': prompt.chat,
+            'text': 'You\'ve chosen to start receiving cheering up messages on *' + when.format() + '*.',
+            'parse_mode': 'Markdown'
+        }).then(() => {
+            return bot.prompter.prompt(prompt.chat, prompt.user, 'schedule_duration', { 'time': when.toDate() })
+        });
     });
 });
 
 bot.on('prompt.request.schedule_duration', function ($evt, prompt) {
-
+    return bot.api.sendMessage({
+        'chat_id': prompt.chat,
+        'text': 'At what interval do you want me to send you cheering up messages?\n' +
+                '_Note_: Write a number and unit separated by a space.  ' +
+                'For example, `1 day`, `8 hours`, `90 minutes`.',
+        'reply_markup': JSON.stringify({
+            'keyboard': [['8 hours'], ['1 day'], ['1 week']],
+            'one_time_keyboard': true,
+        }),
+        'parse_mode': 'Markdown'
+    });
 });
 
 bot.on('prompt.complete.schedule_duration', function ($evt, prompt, result) {
+    let parts = result.text.trim().split(/\s+/);
+    let duration = moment.duration(parseInt(parts[0]), parts[1]);
 
+    bot.logger.debug('[CheerUpBot]  duration "%s": ', result.text, duration.humanize());
+
+    return bot.api.sendMessage({
+        'chat_id': prompt.chat,
+        'text': 'You\'ve chosen to receive cheering up messages with an interval of *' + duration.humanize() + '*.',
+        'parse_mode': 'Markdown'
+    });
 });
 
 

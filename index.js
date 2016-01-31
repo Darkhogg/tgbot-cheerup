@@ -12,5 +12,5 @@ process.on('unhandledRejection', (err) => {
 
 Bot().then(bot => {
     bot.setupPollLoop();
-    bot.setupTickLoop(300);
+    bot.setupTickLoop(parseInt(process.env.TGBOT_TICK_INTERVAL) || 60);
 });

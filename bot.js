@@ -4,6 +4,7 @@ const fuzzy = require('fuzzy');
 const pd = require('paperdrone');
 const mongodb = require('mongodb-bluebird');
 const moment = require('moment-timezone');
+const uuid = require('node-uuid');
 
 const phrases = require('./phrases');
 const log = require('./log');
@@ -25,6 +26,7 @@ module.exports = function createBot () {
 
         bot.addPlugin(new pd.plugins.BotInfoPlugin());
         bot.addPlugin(new pd.plugins.KeyedStoragePlugin());
+        bot.addPlugin(new pd.plugins.SchedulerPlugin());
         bot.addPlugin(new pd.plugins.MessagesPlugin());
         bot.addPlugin(new pd.plugins.CommandsPlugin());
         bot.addPlugin(new pd.plugins.HelpPlugin());
@@ -111,7 +113,12 @@ module.exports = function createBot () {
         bot.on('prompt.complete.schedule_time', function ($evt, prompt, result) {
             return bot.storage.get('settings', prompt.user).then(settings => {
                 let when = moment.tz(result.text, 'YYYY-MM-DD HH:mm:ss', settings.timezone);
+
                 bot.logger.debug('[CheerUpBot]  date "%s": ', result.text, when.format());
+
+                if (!when.isValid()) {
+                    when = moment().tz(settings.timezone);
+                }
 
                 return bot.api.sendMessage({
                     'chat_id': prompt.chat,
@@ -143,10 +150,43 @@ module.exports = function createBot () {
 
             bot.logger.debug('[CheerUpBot]  duration "%s": ', result.text, duration.humanize());
 
+            if (duration.asSeconds() <= 0) {
+                duration = moment.duration(1, 'day');
+            }
+
             return bot.api.sendMessage({
                 'chat_id': prompt.chat,
                 'text': 'You\'ve chosen to receive cheering up messages with an interval of *' + duration.humanize() + '*.',
-                'parse_mode': 'Markdown'
+                'parse_mode': 'Markdown',
+                'reply_markup': JSON.stringify({'hide_keyboard': true}),
+
+            }).then(() => {
+                let schedId = uuid.v4().replace(/-/, '').substring(0, 6);
+
+                let now = moment();
+                let nextTime = moment(prompt.data.time);
+                while (duration.asSeconds() > 0 && nextTime.isValid() && now.isAfter(nextTime)) {
+                    nextTime.add(duration);
+                }
+
+                bot.logger.verbose('[CheerUpBot] (@%s)  new schedule: <%s> start at "%s" with interval "%s"',
+                    (result.from.username || result.from.id), schedId, nextTime.format(), duration.humanize());
+
+                return bot.storage.set('sched:' + prompt.user, schedId, {
+                    'next': nextTime.toDate(),
+                    'interval': duration.asSeconds()
+
+                }).then(() => bot.scheduler.schedule('cheerup', nextTime, {
+                    'user_id': prompt.user,
+                    'username': result.from.username,
+                    'sched_id': schedId,
+
+                })).then(() => bot.api.sendMessage({
+                    'chat_id': prompt.chat,
+                    'text': 'A new cheer up schedule has been created!\n' +
+                            '  \\[' + schedId + ']  next time: *' + nextTime.format() + '*   interval: *' + duration.humanize() + '*',
+                    'parse_mode': 'Markdown'
+                }));
             });
         });
 
@@ -184,12 +224,26 @@ module.exports = function createBot () {
 
         /* A scheduled cheerup is due */
         bot.on('scheduled.cheerup', function ($evt, type, when, data) {
-            return bot.emit('cheerup', data.user);
+            return bot.storage.get('sched:'+data.user_id, data.sched_id).then(obj => {
+                let now = moment();
+                let duration = moment.duration(obj.interval, 'seconds');
+
+                let nextTime = moment(when);
+                while (duration.asSeconds() > 0 && nextTime.isValid() && now.isAfter(nextTime)) {
+                    nextTime.add(duration);
+                }
+
+                return bot.scheduler.schedule('cheerup', nextTime, data)
+                .then(() => bot.storage.set('sched:'+data.user_id, data.sched_id, {
+                    'next': nextTime.toDate(),
+                    'interval': duration.asSeconds()
+                }));
+            }).then(() => bot.emit('cheerup', { 'id': data.user_id, 'username': data.username }));
         });
 
         /* Event emitted whenever we want to send a cheering up message */
         bot.on('cheerup', function ($evt, user) {
-            bot.logger.verbose('[CheerUpBot]  sending cheering up message to #%s (@%s)', user.id, user.username || '~');
+            bot.logger.info('[CheerUpBot]  sending cheering up message to #%s (@%s)', user.id, user.username || '~');
 
             return bot.api.sendMessage({
                 'chat_id': user.id,

@@ -4,7 +4,6 @@ const fuzzy = require('fuzzy');
 const pd = require('paperdrone');
 const mongodb = require('mongodb-bluebird');
 const moment = require('moment-timezone');
-const uuid = require('node-uuid');
 
 const phrases = require('./phrases');
 const log = require('./log');

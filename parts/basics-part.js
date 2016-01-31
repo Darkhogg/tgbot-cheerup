@@ -10,8 +10,8 @@ module.exports = pd.Plugin.define('CheerUp_Basics', function (bot, options) {
         '  /settings - See and modify your settings\n' +
         '  /cheerup - Immediately sends you a cheering up message\n' +
         '  /newsched - Create a new schedule\n' +
-        '  /listsched - List all running schedules\n'
-        '  /delsched - Stop a running schedule\n'
+        '  /listsched - List all running schedules\n' +
+        '  /delsched - Stop a running schedule\n' +
         '\nMy master is @Darkhogg, ask him anything about me!\n' +
         'I\'m an open source bot: https://github.com/Darkhogg/tgbot-cheerup';
 

@@ -31,6 +31,7 @@ module.exports = function createBot () {
         bot.addPlugin(new pd.plugins.CommandsPlugin());
         bot.addPlugin(new pd.plugins.HelpPlugin());
         bot.addPlugin(new pd.plugins.PrompterPlugin());
+        bot.addPlugin(new pd.plugins.UsersPlugin());
 
 
         /* Set up the help message */
@@ -330,7 +331,7 @@ module.exports = function createBot () {
             return bot.api.sendMessage({
                 'chat_id': user.id,
                 'text': phrases.random()
-            });
+            }).tap(() => bot.users.updateActive(user.id));
         });
 
         return bot;

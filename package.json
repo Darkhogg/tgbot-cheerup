@@ -1,6 +1,6 @@
 {
   "name": "tgbot-cheerup",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Telegram bot that sends cheering up messages at specific intervals",
   "license": "MIT",
   "main": "index.js",
@@ -11,7 +11,7 @@
     "kerberos": "0.0.18",
     "moment-timezone": "^0.5.0",
     "mongodb-bluebird": "0.0.9",
-    "paperdrone": "^0.6.1",
+    "paperdrone": "^0.6.4",
     "winston": "^2.1.1"
   },
   "engines": {

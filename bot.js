@@ -194,7 +194,7 @@ module.exports = function createBot () {
         bot.on('prompt.request.settings_timezone', function ($evt, prompt) {
             return bot.api.sendMessage({
                 'chat_id': prompt.chat,
-                'text': 'Write your timezone\'s name.\n_Note: See the map at http://momentjs.com/timezone/ to see what timezone you\'re in._',
+                'text': 'Write your timezone\'s name.\n_Note_: See the map at [http://momentjs.com/timezone/]() to see what timezone you\'re in.',
                 'parse_mode': 'Markdown'
             });
         });

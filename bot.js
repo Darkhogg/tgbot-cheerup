@@ -40,8 +40,10 @@ module.exports = function createBot () {
             '\nCommands:\n' +
             '  /settings - See and modify your settings\n' +
             '  /cheerup - Immediately sends you a cheering up message\n' +
-            '  /schedule - Create a new schedule\n' +
-            '\nMy master is @Darkhogg\n' +
+            '  /newsched - Create a new schedule\n' +
+            '  /listsched - List all running schedules\n'
+            '  /delsched - Stop a running schedule\n'
+            '\nMy master is @Darkhogg, ask him anything about me!\n' +
             'I\'m an open source bot: https://github.com/Darkhogg/tgbot-cheerup';
 
 
@@ -55,7 +57,7 @@ module.exports = function createBot () {
             return bot.storage.get('settings', msg.from.id).then(obj => {
                 let ps = [bot.api.sendMessage({
                     'chat_id': msg.chat.id,
-                    'text': 'Welcome!  If this is the first time you use me, I\'m going to ask you a few questions.' +
+                    'text': 'Welcome!  If this is the first time you use me, I\'m going to ask you a few questions.  ' +
                             'When we\'re finished, use /help to see what you can do.'
                 })];
 
@@ -90,10 +92,32 @@ module.exports = function createBot () {
             return bot.emit('cheerup', msg.from);
         });
 
-        bot.on('command.schedule', function ($evt, cmd, msg) {
+        bot.on(['command.schedule', 'command.newsched'], function ($evt, cmd, msg) {
             return bot.prompter.prompt(msg.chat.id, msg.from.id, 'schedule_time');
         });
 
+        bot.on('command.listsched', function ($evt, cmd, msg) {
+            return bot.storage.get('settings', msg.from.id).then(settings => {
+                return bot.storage.list('sched:'+msg.from.id).then(function (scheds) {
+                    let lines = scheds.map((sched) => ' - ' +
+                        'next: *' + moment(sched.value.next).tz(settings.timezone).format() + '*  ' +
+                        'interval: *' + moment.duration(sched.value.interval, 'seconds').humanize() + '*'
+                    );
+
+                    return bot.api.sendMessage({
+                        'chat_id': msg.chat.id,
+                        'text': 'You have *' + lines.length + '* configured schedules:\n' +
+                                lines.join('\n') +
+                                '\n\nTo remove any of them, use the /delsched command.',
+                        'parse_mode': 'Markdown'
+                    });
+                });
+            });
+        });
+
+        bot.on('command.delsched', function ($evt, cmd, msg) {
+            bot.prompter.prompt(msg.chat.id, msg.from.id, 'delete_schedule');
+        });
 
         bot.on('prompt.request.schedule_time', function ($evt, prompt) {
             let now = moment.tz('Europe/Madrid').format('YYYY-MM-DD hh:mm:ss');
@@ -190,6 +214,58 @@ module.exports = function createBot () {
             });
         });
 
+        bot.on('prompt.request.delete_schedule', function ($evt, prompt) {
+            return bot.storage.get('settings', prompt.user).then(settings => {
+                return bot.storage.list('sched:'+prompt.user).then(function (scheds) {
+                    let lines = scheds.map((sched) => ' - \\[_' + sched.key + '_] ' +
+                        'next: *' + moment(sched.value.next).tz(settings.timezone).format() + '*  ' +
+                        'interval: *' + moment.duration(sched.value.interval, 'seconds').humanize() + '*'
+                    );
+                    let kbd = scheds.map((sched) => [sched.key]).concat([['/cancel']]);
+
+                    return bot.api.sendMessage({
+                        'chat_id': prompt.chat,
+                        'text': 'You have *' + lines.length + '* configured schedules:\n' +
+                                lines.join('\n') +
+                                '\n\nSelect the ID of the schedule to remove.',
+                        'parse_mode': 'Markdown',
+                        'reply_markup': JSON.stringify({
+                            'keyboard': kbd,
+                            'one_time_keyboard': true,
+                        })
+                    });
+                });
+            });
+        });
+
+        bot.on('prompt.complete.delete_schedule', function ($evt, prompt, result) {
+            if (result.text == '/cancel') {
+                return bot.api.sendMessage({
+                    'chat_id': prompt.chat,
+                    'text': 'Ok, I\'ll leave everything as is!',
+                    'reply_markup': JSON.stringify({
+                        'hide_keyboard': true,
+                    })
+                });
+            }
+
+            return bot.storage.del('sched:'+prompt.chat, result.text).then((dr) => {
+                let message = (dr.result.n
+                    ? 'Removed schedule _' + result.text + '_!'
+                    : 'Schedule _' + result.text + '_ was not found.'
+                );
+
+                return bot.api.sendMessage({
+                    'chat_id': prompt.chat,
+                    'text': message,
+                    'parse_mode': 'Markdown',
+                    'reply_markup': JSON.stringify({
+                        'hide_keyboard': true,
+                    })
+                });
+            });
+        });
+
 
         bot.on('prompt.request.settings_timezone', function ($evt, prompt) {
             return bot.api.sendMessage({
@@ -225,6 +301,11 @@ module.exports = function createBot () {
         /* A scheduled cheerup is due */
         bot.on('scheduled.cheerup', function ($evt, type, when, data) {
             return bot.storage.get('sched:'+data.user_id, data.sched_id).then(obj => {
+                if (!obj.interval) {
+                    bot.logger.verbose('[CheerUpBot]  cheerup schedule <%s> not found', data.sched_id);
+                    return;
+                }
+
                 let now = moment();
                 let duration = moment.duration(obj.interval, 'seconds');
 
@@ -237,8 +318,9 @@ module.exports = function createBot () {
                 .then(() => bot.storage.set('sched:'+data.user_id, data.sched_id, {
                     'next': nextTime.toDate(),
                     'interval': duration.asSeconds()
-                }));
-            }).then(() => bot.emit('cheerup', { 'id': data.user_id, 'username': data.username }));
+                }))
+                .then(() => bot.emit('cheerup', { 'id': data.user_id, 'username': data.username }));
+            });
         });
 
         /* Event emitted whenever we want to send a cheering up message */

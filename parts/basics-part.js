@@ -1,5 +1,7 @@
 'use strict';
 const pd = require('paperdrone');
+const moment = require('moment-timezone');
+const fuzzy = require('fuzzy');
 
 module.exports = pd.Plugin.define('CheerUp_Basics', function (bot, options) {
     /* Set up the help message */

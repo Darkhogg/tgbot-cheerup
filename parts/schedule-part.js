@@ -201,6 +201,10 @@ module.exports = pd.Plugin.define('CheerUp_Schedule', function (bot, options) {
                 'next': nextTime.toDate(),
                 'interval': duration.asSeconds()
             }))
+            .tap(() => bot.logger.verbose(
+                '[CheerUpBot]  sending scheduled cheerup <%s> to #%s (@%s)',
+                data.sched_id, data.user_id, data.username||'~'
+            ))
             .then(() => bot.emit('cheerup', { 'id': data.user_id, 'username': data.username }));
         });
     });

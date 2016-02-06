@@ -11,7 +11,7 @@
     "kerberos": "0.0.18",
     "moment-timezone": "^0.5.0",
     "mongodb-bluebird": "0.0.9",
-    "paperdrone": "^0.6.8",
+    "paperdrone": "^0.8.0",
     "winston": "^2.1.1"
   },
   "engines": {
